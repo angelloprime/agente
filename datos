@@ -3,3 +3,5 @@
 13-11       APLI000041104226                 156.50- 111-017  979372 4117838
 
 https://raw.githubusercontent.com/angelloprime/trabajo/refs/heads/main/imagen1.jpg
+
+doc.addImage(img, 'PNG', 6, 6, 197.6, 16.5);
