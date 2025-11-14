@@ -24,10 +24,13 @@
         .btn-outline-primary:hover { background-color: var(--bcp-blue); border-color: var(--bcp-blue); color: white; }
         .btn-check:checked + .btn-outline-primary { background-color: var(--bcp-orange); border-color: var(--bcp-orange); color: white; }
         .btn-check:focus + .btn, .btn:focus { box-shadow: none; }
-
-        /* Estilo para los campos dinámicos (más pequeños) */
-        .campo-dinamico {
-            font-size: 0.875rem; /* Letra un poco más pequeña */
+        .campo-dinamico { font-size: 0.875rem; }
+        
+        /* === ¡NUEVO! Estilo para la cabecera de la tabla === */
+        #preview-header tr {
+            background-color: var(--bcp-blue);
+            color: white;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -41,22 +44,18 @@
     </header>
 
     <main class="container mt-4 mb-4">
-        
         <div class="row">
             
             <div class="col-md-4">
                 <h3 class="columna-titulo">Datos</h3>
-                
                 <div class="mb-3">
                     <label for="asesor" class="form-label">Asesor</label>
                     <input type="text" class="form-control" id="asesor">
                 </div>
-                
                 <div class="mb-3">
                     <label for="cliente" class="form-label">Cliente</label>
                     <input type="text" class="form-control" id="cliente">
                 </div>
-                
                 <div class="mb-3">
                     <label for="cuenta" class="form-label">Número de Cuenta</label>
                     <input type="text" class="form-control" id="cuenta" placeholder="Ej: 123-4567890-1-23" inputmode="numeric">
@@ -65,7 +64,6 @@
             
             <div class="col-md-4">
                 <h3 class="columna-titulo">Detalles de la Operación</h3>
-                
                 <div class="mb-3">
                     <label class="form-label">Opciones</label>
                     <div class="d-grid gap-2 d-md-block">
@@ -91,20 +89,21 @@
                         <option value="10">10</option>
                     </select>
                 </div>
-                
                 <hr>
-
                 <div id="operaciones-container">
                     </div>
-
             </div>
             
             <div class="col-md-4">
                 <h3 class="columna-titulo">Vista previa</h3>
-                <p>Un espacio para mostrar el resultado antes de enviarlo.</p>
-                <div class="border p-3 bg-light">
-                    Contenido de la vista previa...
-                </div>
+                
+                <table class="table table-bordered table-striped table-sm">
+                    <thead id="preview-header">
+                        </thead>
+                    <tbody id="preview-body">
+                        </tbody>
+                </table>
+
             </div>
             
         </div>
@@ -123,7 +122,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             
-            // --- Script para NÚMERO DE CUENTA (Sin cambios) ---
+            // --- Script para NÚMERO DE CUENTA ---
             const inputCuenta = document.getElementById('cuenta');
             inputCuenta.addEventListener('input', function (e) {
                 let valor = e.target.value.replace(/\D/g, '');
@@ -144,22 +143,17 @@
                 e.target.value = valorFormateado;
             });
 
-            // --- ¡NUEVO! Script para SECCIONES DE OPERACIÓN ---
-            
+            // --- Script para SECCIONES DE OPERACIÓN ---
             const selectCantidad = document.getElementById('cantidad');
             const operacionesContainer = document.getElementById('operaciones-container');
 
-            // 1. Función para (re)generar las secciones
             function actualizarSecciones() {
                 const cantidad = parseInt(selectCantidad.value, 10);
-                let htmlInterno = ''; // Acumulamos el HTML aquí
-
+                let htmlInterno = ''; 
                 for (let i = 1; i <= cantidad; i++) {
-                    // Usamos plantillas literales (backticks ``) para crear el HTML
                     htmlInterno += `
                         <div class="card card-body mb-2">
                             <h5 class="h6">Operación ${i}</h5>
-                            
                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-extra" value="extra" data-op-id="${i}">
@@ -174,12 +168,10 @@
                                     <label class="form-check-label campo-dinamico" for="op-${i}-manual">Manual</label>
                                 </div>
                             </div>
-
                             <div class="campo-extra-pdf mb-2" id="campo-extra-pdf-${i}" style="display: none;">
                                 <label for="texto-${i}" class="form-label form-label-sm campo-dinamico">Comentario:</label>
                                 <input type="text" id="texto-${i}" class="form-control form-control-sm">
                             </div>
-                            
                             <div class="campo-manual mb-2" id="campo-manual-${i}" style="display: none;">
                                 <label for="fecha-${i}" class="form-label form-label-sm campo-dinamico">Fecha:</label>
                                 <input type="date" id="fecha-${i}" class="form-control form-control-sm">
@@ -187,38 +179,81 @@
                         </div>
                     `;
                 }
-                
-                // Asignar todo el HTML generado de una sola vez
                 operacionesContainer.innerHTML = htmlInterno;
             }
 
-            // 2. Escuchador de eventos en el CONTENEDOR (Delegación de eventos)
             operacionesContainer.addEventListener('change', function(e) {
-                // Revisar si el cambio fue en un radio-botón
                 if (e.target.classList.contains('tipo-operacion')) {
                     const tipo = e.target.value;
-                    const opId = e.target.dataset.opId; // Obtenemos el ID de la operación (ej: '1', '2', etc.)
-
-                    // Encontrar los campos específicos para ESTA operación
+                    const opId = e.target.dataset.opId; 
                     const campoTexto = document.getElementById(`campo-extra-pdf-${opId}`);
                     const campoFecha = document.getElementById(`campo-manual-${opId}`);
 
-                    // Aplicar la lógica de visibilidad
                     if (tipo === 'extra' || tipo === 'pdf') {
-                        campoTexto.style.display = 'block'; // Mostrar
-                        campoFecha.style.display = 'none';  // Ocultar
+                        campoTexto.style.display = 'block'; 
+                        campoFecha.style.display = 'none';  
                     } else if (tipo === 'manual') {
-                        campoTexto.style.display = 'none';  // Ocultar
-                        campoFecha.style.display = 'block'; // Mostrar
+                        campoTexto.style.display = 'none';  
+                        campoFecha.style.display = 'block'; 
                     }
                 }
             });
-
-            // 3. Escuchar el dropdown de "Cantidad"
             selectCantidad.addEventListener('change', actualizarSecciones);
+            actualizarSecciones(); // Llamada inicial
+
+
+            // --- ¡NUEVO! Script para VISTA PREVIA (CABECERA) ---
+            
+            // 1. Seleccionar los elementos
+            const checkHora = document.getElementById('btn-check-hora');
+            const checkCuenta = document.getElementById('btn-check-cuenta');
+            const previewHeader = document.getElementById('preview-header');
+            const previewBody = document.getElementById('preview-body'); // Para el placeholder
+
+            // 2. Función para actualizar la cabecera
+            function actualizarVistaPrevia() {
+                const incluirHora = checkHora.checked;
+                const incluirCuenta = checkCuenta.checked;
+
+                // Construir el array de cabeceras
+                let headers = ['Fecha', 'Glosa', 'Causal'];
+
+                if (incluirCuenta) {
+                    headers.push('N° Cuenta');
+                }
+                
+                headers.push('Importe', 'N° Operación');
+
+                if (incluirHora) {
+                    headers.push('Hora');
+                }
+
+                // Generar el HTML de la cabecera
+                let headerHtml = '<tr>';
+                headers.forEach(h => {
+                    headerHtml += `<th>${h}</th>`;
+                });
+                headerHtml += '</tr>';
+
+                // Inyectar el HTML
+                previewHeader.innerHTML = headerHtml;
+                
+                // (Opcional) Poner un placeholder en el cuerpo de la tabla
+                previewBody.innerHTML = `
+                    <tr>
+                        <td colspan="${headers.length}" class="text-center text-muted fst-italic">
+                            Aún no hay datos...
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // 3. Escuchar cambios en los checkboxes
+            checkHora.addEventListener('change', actualizarVistaPrevia);
+            checkCuenta.addEventListener('change', actualizarVistaPrevia);
 
             // 4. Llamar a la función al cargar la página
-            actualizarSecciones();
+            actualizarVistaPrevia();
 
         });
     </script>
