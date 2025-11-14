@@ -8,66 +8,27 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     
     <style>
-        /* Variables de color inspiradas en BCP */
         :root {
-            --bcp-blue: #003882;  /* Azul corporativo */
-            --bcp-orange: #F26C00; /* Naranja para acentos */
-            --bcp-gray: #f4f4f4;   /* Gris claro para fondos */
+            --bcp-blue: #003882;
+            --bcp-orange: #F26C00;
+            --bcp-gray: #f4f4f4;
         }
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        main { flex-grow: 1; }
+        .site-header { background-color: var(--bcp-blue); color: white; padding: 2rem 0; }
+        .columna-titulo { color: var(--bcp-orange); border-bottom: 2px solid var(--bcp-orange); padding-bottom: 10px; margin-bottom: 20px; }
+        .site-footer { background-color: var(--bcp-gray); color: #555; padding: 1.5rem 0; border-top: 1px solid #ddd; }
+        
+        /* Estilos para botones BCP */
+        .btn-outline-primary { color: var(--bcp-blue); border-color: var(--bcp-blue); }
+        .btn-outline-primary:hover { background-color: var(--bcp-blue); border-color: var(--bcp-blue); color: white; }
+        .btn-check:checked + .btn-outline-primary { background-color: var(--bcp-orange); border-color: var(--bcp-orange); color: white; }
+        .btn-check:focus + .btn, .btn:focus { box-shadow: none; }
 
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+        /* Estilo para los campos dinámicos (más pequeños) */
+        .campo-dinamico {
+            font-size: 0.875rem; /* Letra un poco más pequeña */
         }
-        
-        main {
-            flex-grow: 1;
-        }
-
-        .site-header {
-            background-color: var(--bcp-blue);
-            color: white;
-            padding: 2rem 0;
-        }
-        
-        .columna-titulo {
-            color: var(--bcp-orange);
-            border-bottom: 2px solid var(--bcp-orange);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .site-footer {
-            background-color: var(--bcp-gray);
-            color: #555;
-            padding: 1.5rem 0;
-            border-top: 1px solid #ddd;
-        }
-
-        /* === ESTILOS NUEVOS PARA BOTONES BCP === */
-        /* Estilo base del botón (azul BCP) */
-        .btn-outline-primary {
-            color: var(--bcp-blue);
-            border-color: var(--bcp-blue);
-        }
-        /* Estilo al pasar el mouse (azul BCP) */
-        .btn-outline-primary:hover {
-            background-color: var(--bcp-blue);
-            border-color: var(--bcp-blue);
-            color: white;
-        }
-        /* Estilo al estar SELECCIONADO (naranja BCP) */
-        .btn-check:checked + .btn-outline-primary {
-             background-color: var(--bcp-orange);
-             border-color: var(--bcp-orange);
-             color: white;
-        }
-        /* Quitar sombra de foco (opcional, pero más limpio) */
-        .btn-check:focus + .btn, .btn:focus {
-            box-shadow: none;
-        }
-        
     </style>
 </head>
 
@@ -115,7 +76,6 @@
                         <label class="btn btn-outline-primary" for="btn-check-cuenta">Incluir N° Cuenta</label>
                     </div>
                 </div>
-
                 <div class="mb-3">
                     <label for="cantidad" class="form-label">Cantidad</label>
                     <select class="form-select" id="cantidad">
@@ -161,21 +121,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script>
-        // Espera a que el documento esté listo
         document.addEventListener('DOMContentLoaded', function () {
             
-            // --- Script para NÚMERO DE CUENTA (de la vez pasada) ---
+            // --- Script para NÚMERO DE CUENTA (Sin cambios) ---
             const inputCuenta = document.getElementById('cuenta');
             inputCuenta.addEventListener('input', function (e) {
                 let valor = e.target.value.replace(/\D/g, '');
                 let longitud = valor.length;
                 let valorFormateado = '';
-
-                if (longitud > 14) {
-                    valor = valor.substring(0, 14);
-                    longitud = 14;
-                }
-
+                if (longitud > 14) { valor = valor.substring(0, 14); longitud = 14; }
                 if (longitud > 13) {
                     valorFormateado = valor.substring(0, 3);
                     if (longitud > 3) { valorFormateado += '-' + valor.substring(3, 11); }
@@ -192,39 +146,78 @@
 
             // --- ¡NUEVO! Script para SECCIONES DE OPERACIÓN ---
             
-            // 1. Seleccionar los elementos del DOM
             const selectCantidad = document.getElementById('cantidad');
             const operacionesContainer = document.getElementById('operaciones-container');
 
-            // 2. Función para actualizar las secciones
+            // 1. Función para (re)generar las secciones
             function actualizarSecciones() {
-                // Obtener el valor seleccionado y convertirlo a número
                 const cantidad = parseInt(selectCantidad.value, 10);
-                
-                // Limpiar el contenedor
-                operacionesContainer.innerHTML = ''; 
+                let htmlInterno = ''; // Acumulamos el HTML aquí
 
-                // 3. Crear un bucle para generar cada sección
                 for (let i = 1; i <= cantidad; i++) {
-                    // Crear un nuevo div
-                    const seccion = document.createElement('div');
-                    
-                    // Añadir clases de Bootstrap para que se vea bien (un "card")
-                    seccion.className = 'card card-body mb-2';
-                    
-                    // Poner el texto
-                    seccion.textContent = 'Operación ' + i;
-                    
-                    // Añadir el nuevo div al contenedor
-                    operacionesContainer.appendChild(seccion);
+                    // Usamos plantillas literales (backticks ``) para crear el HTML
+                    htmlInterno += `
+                        <div class="card card-body mb-2">
+                            <h5 class="h6">Operación ${i}</h5>
+                            
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-extra" value="extra" data-op-id="${i}">
+                                    <label class="form-check-label campo-dinamico" for="op-${i}-extra">Extra</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-pdf" value="pdf" data-op-id="${i}">
+                                    <label class="form-check-label campo-dinamico" for="op-${i}-pdf">PDF</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-manual" value="manual" data-op-id="${i}">
+                                    <label class="form-check-label campo-dinamico" for="op-${i}-manual">Manual</label>
+                                </div>
+                            </div>
+
+                            <div class="campo-extra-pdf mb-2" id="campo-extra-pdf-${i}" style="display: none;">
+                                <label for="texto-${i}" class="form-label form-label-sm campo-dinamico">Comentario:</label>
+                                <input type="text" id="texto-${i}" class="form-control form-control-sm">
+                            </div>
+                            
+                            <div class="campo-manual mb-2" id="campo-manual-${i}" style="display: none;">
+                                <label for="fecha-${i}" class="form-label form-label-sm campo-dinamico">Fecha:</label>
+                                <input type="date" id="fecha-${i}" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    `;
                 }
+                
+                // Asignar todo el HTML generado de una sola vez
+                operacionesContainer.innerHTML = htmlInterno;
             }
 
-            // 4. Escuchar el evento 'change' en el dropdown
+            // 2. Escuchador de eventos en el CONTENEDOR (Delegación de eventos)
+            operacionesContainer.addEventListener('change', function(e) {
+                // Revisar si el cambio fue en un radio-botón
+                if (e.target.classList.contains('tipo-operacion')) {
+                    const tipo = e.target.value;
+                    const opId = e.target.dataset.opId; // Obtenemos el ID de la operación (ej: '1', '2', etc.)
+
+                    // Encontrar los campos específicos para ESTA operación
+                    const campoTexto = document.getElementById(`campo-extra-pdf-${opId}`);
+                    const campoFecha = document.getElementById(`campo-manual-${opId}`);
+
+                    // Aplicar la lógica de visibilidad
+                    if (tipo === 'extra' || tipo === 'pdf') {
+                        campoTexto.style.display = 'block'; // Mostrar
+                        campoFecha.style.display = 'none';  // Ocultar
+                    } else if (tipo === 'manual') {
+                        campoTexto.style.display = 'none';  // Ocultar
+                        campoFecha.style.display = 'block'; // Mostrar
+                    }
+                }
+            });
+
+            // 3. Escuchar el dropdown de "Cantidad"
             selectCantidad.addEventListener('change', actualizarSecciones);
 
-            // 5. Llamar a la función una vez al cargar la página
-            //    para que muestre "Operación 1" (ya que 1 está seleccionado por defecto)
+            // 4. Llamar a la función al cargar la página
             actualizarSecciones();
 
         });
