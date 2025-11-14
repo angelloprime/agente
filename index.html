@@ -51,16 +51,21 @@
             min-width: 85px;
         }
 
-        /* --- ¡NUEVO! Ocultar/Mostrar columnas con CSS --- */
+        /* Ocultar/Mostrar columnas con CSS */
         .col-cuenta,
         .col-hora {
-            display: none; /* Ocultas por defecto */
+            display: none; 
         }
-        
-        /* Cuando la tabla tiene la clase, se muestran */
         .table.show-cuenta .col-cuenta,
         .table.show-hora .col-hora {
             display: table-cell;
+        }
+
+        /* --- ¡NUEVO! Centrar todo en la tabla --- */
+        #preview-table th,
+        #preview-table td {
+            text-align: center;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -192,7 +197,7 @@
                 const cantidad = parseInt(selectCantidad.value, 10);
                 let htmlInterno = ''; 
                 for (let i = 1; i <= cantidad; i++) {
-                    // ¡NUEVO! Añadido "checked" a "Extra" y "display: block" al campo de texto
+                    // Añadido "checked" a "Extra" y "display: block" al campo de texto
                     htmlInterno += `
                         <div class="card card-body mb-2">
                             <h5 class="h6">Operación ${i}</h5>
@@ -243,7 +248,6 @@
             
             // --- (Helper) Generar el placeholder de la tabla ---
             function generarPlaceholder() {
-                // ¡NUEVO! Calcula el colspan basado en los checkboxes
                 let colspan = 6; // Base: Fecha, Glosa, Causal, Importe, N° Op, Acción
                 if (checkHora.checked) colspan++;
                 if (checkCuenta.checked) colspan++;
@@ -267,9 +271,9 @@
                 }
             }
 
-            // --- (DOM) Actualizar VISTA PREVIA ---
+            // --- (DOM) Actualizar VISTA PREVIA (Cabecera) ---
             function actualizarVistaPrevia() {
-                // ¡NUEVO! Siempre genera la cabecera completa, pero con clases
+                // Siempre genera la cabecera completa, pero con clases
                 const headers = ['Fecha', 'Glosa', 'Causal', 'N° Cuenta', 'Importe', 'N° Operación', 'Hora', 'Acción'];
                 let headerHtml = '<tr>';
                 headers.forEach(h => {
@@ -280,9 +284,9 @@
                 });
                 headerHtml += '</tr>';
                 previewHeader.innerHTML = headerHtml;
-                previewBody.innerHTML = generarPlaceholder(); // Reinicia la tabla con el placeholder
+                previewBody.innerHTML = generarPlaceholder(); 
                 
-                // ¡NUEVO! Aplica las clases de visibilidad a la tabla
+                // Aplica las clases de visibilidad a la tabla
                 previewTable.classList.toggle('show-hora', checkHora.checked);
                 previewTable.classList.toggle('show-cuenta', checkCuenta.checked);
             }
@@ -294,10 +298,10 @@
                  }
             }
 
-            // --- ¡NUEVO! Escuchadores de Checkbox (ya no borran la tabla) ---
+            // --- Escuchadores de Checkbox (ya no borran la tabla) ---
             checkHora.addEventListener('change', function() {
                 previewTable.classList.toggle('show-hora', this.checked);
-                actualizarColspanPlaceholder(); // Actualiza el colspan por si el placeholder está visible
+                actualizarColspanPlaceholder(); 
             });
             checkCuenta.addEventListener('change', function() {
                 previewTable.classList.toggle('show-cuenta', this.checked);
@@ -307,7 +311,6 @@
             // --- Escuchador para "Cantidad" ---
             selectCantidad.addEventListener('change', actualizarSecciones);
             
-
             // --- SCRIPT PARA PARSEAR EL TEXTO ---
             operacionesContainer.addEventListener('input', function(e) {
                 if (!e.target.classList.contains('campo-comentario')) { return; }
@@ -332,10 +335,9 @@
                     'Importe': importe,
                     'N° Operación': operacion,
                     'N° Cuenta': inputCuenta.value, // Toma el valor actual
-                    'Hora': new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) // Toma la hora actual
+                    'Hora': '' // --- ¡CAMBIO! Ya no pone la hora actual ---
                 };
                 
-                // ¡NUEVO! Construye la fila manualmente con clases CSS
                 let newRowHtml = `
                     <tr>
                         <td>${dataMap['Fecha']}</td>
@@ -395,7 +397,7 @@
                 selectCantidad.value = '1';
                 inputTerminal.value = '';
                 actualizarSecciones();
-                actualizarVistaPrevia(); // Esto reinicia la tabla y aplica clases y placeholder
+                actualizarVistaPrevia(); 
             });
 
             // --- Llamadas iniciales al cargar la página ---
