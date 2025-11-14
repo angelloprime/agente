@@ -43,13 +43,24 @@
             color: white;
         }
 
-        /* --- ¡NUEVO! Estilo para los botones de acción --- */
         .action-buttons .btn {
-            padding: 0.1rem 0.4rem; /* Botones más pequeños */
+            padding: 0.1rem 0.4rem;
             line-height: 1.2;
         }
         .action-buttons {
-            min-width: 85px; /* Evita que los botones se reordenen feo */
+            min-width: 85px;
+        }
+
+        /* --- ¡NUEVO! Ocultar/Mostrar columnas con CSS --- */
+        .col-cuenta,
+        .col-hora {
+            display: none; /* Ocultas por defecto */
+        }
+        
+        /* Cuando la tabla tiene la clase, se muestran */
+        .table.show-cuenta .col-cuenta,
+        .table.show-hora .col-hora {
+            display: table-cell;
         }
     </style>
 </head>
@@ -115,7 +126,7 @@
             <div class="col-md-6">
                 <h3 class="columna-titulo">Vista previa</h3>
                 
-                <table class="table table-bordered table-striped table-sm">
+                <table class="table table-bordered table-striped table-sm" id="preview-table">
                     <thead id="preview-header">
                         </thead>
                     <tbody id="preview-body">
@@ -156,8 +167,9 @@
             const operacionesContainer = document.getElementById('operaciones-container');
             const checkHora = document.getElementById('btn-check-hora');
             const checkCuenta = document.getElementById('btn-check-cuenta');
-            const previewHeader = document.getElementById('preview-header');
-            const previewBody = document.getElementById('preview-body');
+            const previewTable = document.getElementById('preview-table'); // Tabla
+            const previewHeader = document.getElementById('preview-header'); // Cabecera
+            const previewBody = document.getElementById('preview-body'); // Cuerpo
             const btnLimpiar = document.getElementById('btn-limpiar');
             const inputTerminal = document.getElementById('terminal');
 
@@ -175,17 +187,18 @@
                 e.target.value = valorFormateado;
             });
 
-            // --- Script para SECCIONES DE OPERACIÓN (Generar HTML) ---
+            // --- Script para SECCIONES DE OPERACIÓN ---
             function actualizarSecciones() {
                 const cantidad = parseInt(selectCantidad.value, 10);
                 let htmlInterno = ''; 
                 for (let i = 1; i <= cantidad; i++) {
+                    // ¡NUEVO! Añadido "checked" a "Extra" y "display: block" al campo de texto
                     htmlInterno += `
                         <div class="card card-body mb-2">
                             <h5 class="h6">Operación ${i}</h5>
                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-extra" value="extra" data-op-id="${i}">
+                                    <input class="form-check-input tipo-operacion" type="radio" name="tipo-op-${i}" id="op-${i}-extra" value="extra" data-op-id="${i}" checked>
                                     <label class="form-check-label campo-dinamico" for="op-${i}-extra">Extra</label>
                                 </div>
                                 <div class="form-check form-check-inline">
@@ -197,7 +210,7 @@
                                     <label class="form-check-label campo-dinamico" for="op-${i}-manual">Manual</label>
                                 </div>
                             </div>
-                            <div class="campo-extra-pdf mb-2" id="campo-extra-pdf-${i}" style="display: none;">
+                            <div class="campo-extra-pdf mb-2" id="campo-extra-pdf-${i}" style="display: block;">
                                 <label for="texto-${i}" class="form-label form-label-sm campo-dinamico">Comentario:</label>
                                 <input type="text" id="texto-${i}" class="form-control form-control-sm campo-comentario" placeholder="Pegar texto aquí...">
                             </div>
@@ -228,21 +241,12 @@
                 }
             });
             
-            // --- (Helper) Obtener cabeceras de la tabla ---
-            function obtenerCabecerasPreview() {
-                const incluirHora = checkHora.checked;
-                const incluirCuenta = checkCuenta.checked;
-                let headers = ['Fecha', 'Glosa', 'Causal'];
-                if (incluirCuenta) { headers.push('N° Cuenta'); }
-                headers.push('Importe', 'N° Operación');
-                if (incluirHora) { headers.push('Hora'); }
-                headers.push('Acción'); // ¡NUEVO!
-                return headers;
-            }
-            
             // --- (Helper) Generar el placeholder de la tabla ---
             function generarPlaceholder() {
-                const colspan = obtenerCabecerasPreview().length;
+                // ¡NUEVO! Calcula el colspan basado en los checkboxes
+                let colspan = 6; // Base: Fecha, Glosa, Causal, Importe, N° Op, Acción
+                if (checkHora.checked) colspan++;
+                if (checkCuenta.checked) colspan++;
                 return `
                     <tr class="placeholder-row">
                         <td colspan="${colspan}" class="text-center text-muted fst-italic">
@@ -252,14 +256,35 @@
                 `;
             }
 
+            // --- (Helper) Actualizar colspan del placeholder si existe ---
+            function actualizarColspanPlaceholder() {
+                const placeholderCell = previewBody.querySelector('.placeholder-row td');
+                if (placeholderCell) {
+                    let colspan = 6;
+                    if (checkHora.checked) colspan++;
+                    if (checkCuenta.checked) colspan++;
+                    placeholderCell.colSpan = colspan;
+                }
+            }
+
             // --- (DOM) Actualizar VISTA PREVIA ---
             function actualizarVistaPrevia() {
-                const headers = obtenerCabecerasPreview();
+                // ¡NUEVO! Siempre genera la cabecera completa, pero con clases
+                const headers = ['Fecha', 'Glosa', 'Causal', 'N° Cuenta', 'Importe', 'N° Operación', 'Hora', 'Acción'];
                 let headerHtml = '<tr>';
-                headers.forEach(h => { headerHtml += `<th>${h}</th>`; });
+                headers.forEach(h => {
+                    let cssClass = '';
+                    if (h === 'N° Cuenta') cssClass = 'col-cuenta';
+                    if (h === 'Hora') cssClass = 'col-hora';
+                    headerHtml += `<th class="${cssClass}">${h}</th>`;
+                });
                 headerHtml += '</tr>';
                 previewHeader.innerHTML = headerHtml;
                 previewBody.innerHTML = generarPlaceholder(); // Reinicia la tabla con el placeholder
+                
+                // ¡NUEVO! Aplica las clases de visibilidad a la tabla
+                previewTable.classList.toggle('show-hora', checkHora.checked);
+                previewTable.classList.toggle('show-cuenta', checkCuenta.checked);
             }
             
             // --- (Helper) Revisar si la tabla está vacía y poner placeholder ---
@@ -269,10 +294,17 @@
                  }
             }
 
-
-            // --- (Escuchadores) Actualizar cabecera de tabla y cantidad de ops ---
-            checkHora.addEventListener('change', actualizarVistaPrevia);
-            checkCuenta.addEventListener('change', actualizarVistaPrevia);
+            // --- ¡NUEVO! Escuchadores de Checkbox (ya no borran la tabla) ---
+            checkHora.addEventListener('change', function() {
+                previewTable.classList.toggle('show-hora', this.checked);
+                actualizarColspanPlaceholder(); // Actualiza el colspan por si el placeholder está visible
+            });
+            checkCuenta.addEventListener('change', function() {
+                previewTable.classList.toggle('show-cuenta', this.checked);
+                actualizarColspanPlaceholder();
+            });
+            
+            // --- Escuchador para "Cantidad" ---
             selectCantidad.addEventListener('change', actualizarSecciones);
             
 
@@ -293,32 +325,33 @@
                 const operacion = match[6].slice(-6); 
                 inputTerminal.value = terminal;
 
-                const headers = obtenerCabecerasPreview();
                 const dataMap = {
                     'Fecha': fecha,
                     'Glosa': glosa,
                     'Causal': causal,
                     'Importe': importe,
                     'N° Operación': operacion,
-                    'N° Cuenta': checkCuenta.checked ? inputCuenta.value : '',
-                    'Hora': checkHora.checked ? new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : ''
+                    'N° Cuenta': inputCuenta.value, // Toma el valor actual
+                    'Hora': new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) // Toma la hora actual
                 };
                 
-                let newRowHtml = '<tr>';
-                headers.forEach(header => {
-                    if (header === 'Acción') {
-                        // ¡NUEVO! Añadir botones de acción
-                        newRowHtml += `
-                            <td class="text-center text-nowrap action-buttons">
-                                <button type="button" class="btn btn-light btn-sm btn-move-up" title="Subir">&uarr;</button>
-                                <button type="button" class="btn btn-light btn-sm btn-move-down" title="Bajar">&darr;</button>
-                                <button type="button" class="btn btn-danger btn-sm btn-delete-row" title="Eliminar">&times;</button>
-                            </td>`;
-                    } else {
-                        newRowHtml += `<td>${dataMap[header] || ''}</td>`;
-                    }
-                });
-                newRowHtml += '</tr>';
+                // ¡NUEVO! Construye la fila manualmente con clases CSS
+                let newRowHtml = `
+                    <tr>
+                        <td>${dataMap['Fecha']}</td>
+                        <td>${dataMap['Glosa']}</td>
+                        <td>${dataMap['Causal']}</td>
+                        <td class="col-cuenta">${dataMap['N° Cuenta']}</td>
+                        <td>${dataMap['Importe']}</td>
+                        <td>${dataMap['N° Operación']}</td>
+                        <td class="col-hora">${dataMap['Hora']}</td>
+                        <td class="text-center text-nowrap action-buttons">
+                            <button type="button" class="btn btn-light btn-sm btn-move-up" title="Subir">&uarr;</button>
+                            <button type="button" class="btn btn-light btn-sm btn-move-down" title="Bajar">&darr;</button>
+                            <button type="button" class="btn btn-danger btn-sm btn-delete-row" title="Eliminar">&times;</button>
+                        </td>
+                    </tr>
+                `;
 
                 const placeholder = previewBody.querySelector('.placeholder-row');
                 if (placeholder) {
@@ -329,41 +362,30 @@
                 e.target.value = '';
             });
 
-            // ==============================================
-            // === ¡NUEVO! SCRIPT PARA ACCIONES DE TABLA (MOVER/ELIMINAR) ===
-            // ==============================================
+            // --- SCRIPT PARA ACCIONES DE TABLA (MOVER/ELIMINAR) ---
             previewBody.addEventListener('click', function(e) {
                 const fila = e.target.closest('tr');
-                if (!fila) return; // Salir si no se hizo clic en una fila
+                if (!fila) return;
 
-                // --- Lógica de Eliminar ---
                 if (e.target.classList.contains('btn-delete-row')) {
                     fila.remove();
-                    revisarPlaceholderTabla(); // Revisar si la tabla quedó vacía
+                    revisarPlaceholderTabla(); 
                 }
-                
-                // --- Lógica de Mover Arriba ---
                 else if (e.target.classList.contains('btn-move-up')) {
                     const filaAnterior = fila.previousElementSibling;
-                    // Mover solo si existe una fila anterior Y no es el placeholder
                     if (filaAnterior && !filaAnterior.classList.contains('placeholder-row')) {
                         previewBody.insertBefore(fila, filaAnterior);
                     }
                 }
-                
-                // --- Lógica de Mover Abajo ---
                 else if (e.target.classList.contains('btn-move-down')) {
                     const filaSiguiente = fila.nextElementSibling;
                     if (filaSiguiente) {
-                        // Mover la fila siguiente ANTES de la fila actual
                         previewBody.insertBefore(filaSiguiente, fila);
                     }
                 }
             });
 
-            // ==============================================
-            // === SCRIPT PARA BOTÓN LIMPIAR (ACTUALIZADO) ===
-            // ==============================================
+            // --- SCRIPT PARA BOTÓN LIMPIAR ---
             btnLimpiar.addEventListener('click', function() {
                 document.getElementById('asesor').value = '';
                 document.getElementById('cliente').value = '';
@@ -373,7 +395,7 @@
                 selectCantidad.value = '1';
                 inputTerminal.value = '';
                 actualizarSecciones();
-                actualizarVistaPrevia(); // Esto reinicia la tabla y pone el placeholder
+                actualizarVistaPrevia(); // Esto reinicia la tabla y aplica clases y placeholder
             });
 
             // --- Llamadas iniciales al cargar la página ---
