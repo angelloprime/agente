@@ -44,6 +44,30 @@
             padding: 1.5rem 0;
             border-top: 1px solid #ddd;
         }
+
+        /* === ESTILOS NUEVOS PARA BOTONES BCP === */
+        /* Estilo base del botón (azul BCP) */
+        .btn-outline-primary {
+            color: var(--bcp-blue);
+            border-color: var(--bcp-blue);
+        }
+        /* Estilo al pasar el mouse (azul BCP) */
+        .btn-outline-primary:hover {
+            background-color: var(--bcp-blue);
+            border-color: var(--bcp-blue);
+            color: white;
+        }
+        /* Estilo al estar SELECCIONADO (naranja BCP) */
+        .btn-check:checked + .btn-outline-primary {
+             background-color: var(--bcp-orange);
+             border-color: var(--bcp-orange);
+             color: white;
+        }
+        /* Quitar sombra de foco (opcional, pero más limpio) */
+        .btn-check:focus + .btn, .btn:focus {
+            box-shadow: none;
+        }
+        
     </style>
 </head>
 
@@ -74,18 +98,45 @@
                 
                 <div class="mb-3">
                     <label for="cuenta" class="form-label">Número de Cuenta</label>
-                    <input type="text" 
-                           class="form-control" 
-                           id="cuenta" 
-                           placeholder="Ej: 123-4567890-1-23" 
-                           inputmode="numeric">
+                    <input type="text" class="form-control" id="cuenta" placeholder="Ej: 123-4567890-1-23" inputmode="numeric">
                 </div>
-                
             </div>
             
             <div class="col-md-4">
                 <h3 class="columna-titulo">Detalles de la Operación</h3>
-                <p>Información adicional, selectores o configuraciones.</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">Opciones</label>
+                    <div class="d-grid gap-2 d-md-block">
+                        <input type="checkbox" class="btn-check" id="btn-check-hora" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="btn-check-hora">Incluir Hora</label>
+                        
+                        <input type="checkbox" class="btn-check" id="btn-check-cuenta" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="btn-check-cuenta">Incluir N° Cuenta</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cantidad" class="form-label">Cantidad</label>
+                    <select class="form-select" id="cantidad">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                
+                <hr>
+
+                <div id="operaciones-container">
+                    </div>
+
             </div>
             
             <div class="col-md-4">
@@ -113,42 +164,69 @@
         // Espera a que el documento esté listo
         document.addEventListener('DOMContentLoaded', function () {
             
-            // Selecciona el campo de "Número de Cuenta"
+            // --- Script para NÚMERO DE CUENTA (de la vez pasada) ---
             const inputCuenta = document.getElementById('cuenta');
-
-            // Escucha el evento 'input' (cada vez que se teclea algo)
             inputCuenta.addEventListener('input', function (e) {
-                
-                // 1. Limpiar el valor: Quita todo lo que NO sea un dígito
                 let valor = e.target.value.replace(/\D/g, '');
                 let longitud = valor.length;
                 let valorFormateado = '';
 
-                // 2. Limitar la longitud total a 14 dígitos
                 if (longitud > 14) {
                     valor = valor.substring(0, 14);
                     longitud = 14;
                 }
 
-                // 3. Decidir qué formato aplicar
                 if (longitud > 13) {
-                    // Formato de 14 dígitos: XXX-XXXXXXXX-X-XX (Grupos: 3-8-1-2)
                     valorFormateado = valor.substring(0, 3);
                     if (longitud > 3) { valorFormateado += '-' + valor.substring(3, 11); }
                     if (longitud > 11) { valorFormateado += '-' + valor.substring(11, 12); }
                     if (longitud > 12) { valorFormateado += '-' + valor.substring(12, 14); }
-                
                 } else {
-                    // Formato de 13 dígitos: XXX-XXXXXXX-X-XX (Grupos: 3-7-1-2)
                     valorFormateado = valor.substring(0, 3);
                     if (longitud > 3) { valorFormateado += '-' + valor.substring(3, 10); }
                     if (longitud > 10) { valorFormateado += '-' + valor.substring(10, 11); }
                     if (longitud > 11) { valorFormateado += '-' + valor.substring(11, 13); }
                 }
-
-                // 4. Aplicar el valor formateado de nuevo al campo
                 e.target.value = valorFormateado;
             });
+
+            // --- ¡NUEVO! Script para SECCIONES DE OPERACIÓN ---
+            
+            // 1. Seleccionar los elementos del DOM
+            const selectCantidad = document.getElementById('cantidad');
+            const operacionesContainer = document.getElementById('operaciones-container');
+
+            // 2. Función para actualizar las secciones
+            function actualizarSecciones() {
+                // Obtener el valor seleccionado y convertirlo a número
+                const cantidad = parseInt(selectCantidad.value, 10);
+                
+                // Limpiar el contenedor
+                operacionesContainer.innerHTML = ''; 
+
+                // 3. Crear un bucle para generar cada sección
+                for (let i = 1; i <= cantidad; i++) {
+                    // Crear un nuevo div
+                    const seccion = document.createElement('div');
+                    
+                    // Añadir clases de Bootstrap para que se vea bien (un "card")
+                    seccion.className = 'card card-body mb-2';
+                    
+                    // Poner el texto
+                    seccion.textContent = 'Operación ' + i;
+                    
+                    // Añadir el nuevo div al contenedor
+                    operacionesContainer.appendChild(seccion);
+                }
+            }
+
+            // 4. Escuchar el evento 'change' en el dropdown
+            selectCantidad.addEventListener('change', actualizarSecciones);
+
+            // 5. Llamar a la función una vez al cargar la página
+            //    para que muestre "Operación 1" (ya que 1 está seleccionado por defecto)
+            actualizarSecciones();
+
         });
     </script>
 
