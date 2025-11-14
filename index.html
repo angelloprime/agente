@@ -15,28 +15,22 @@
             --bcp-gray: #f4f4f4;   /* Gris claro para fondos */
         }
 
-        /* Estructura para que el footer se mantenga abajo (Flexbox)
-          d-flex y flex-column son clases de Bootstrap, vh-100 es de Bootstrap (view-height 100%)
-        */
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
         
-        /* Contenedor principal que "empuja" el footer */
         main {
             flex-grow: 1;
         }
 
-        /* Estilo para el header principal */
         .site-header {
             background-color: var(--bcp-blue);
             color: white;
-            padding: 2rem 0; /* Padding de Bootstrap (2rem arriba/abajo, 0 izq/der) */
+            padding: 2rem 0;
         }
         
-        /* Estilo para los títulos de las columnas */
         .columna-titulo {
             color: var(--bcp-orange);
             border-bottom: 2px solid var(--bcp-orange);
@@ -44,7 +38,6 @@
             margin-bottom: 20px;
         }
         
-        /* Estilo para el footer */
         .site-footer {
             background-color: var(--bcp-gray);
             color: #555;
@@ -62,15 +55,32 @@
         </div>
     </header>
 
-    <main class="container mt-4 mb-4"> <div class="row">
+    <main class="container mt-4 mb-4">
+        
+        <div class="row">
             
             <div class="col-md-4">
                 <h3 class="columna-titulo">Datos</h3>
-                <p>Aquí puedes poner tu formulario, campos de texto, etc.</p>
+                
                 <div class="mb-3">
-                    <label for="campo1" class="form-label">Ejemplo Campo</label>
-                    <input type="text" class="form-control" id="campo1">
+                    <label for="asesor" class="form-label">Asesor</label>
+                    <input type="text" class="form-control" id="asesor">
                 </div>
+                
+                <div class="mb-3">
+                    <label for="cliente" class="form-label">Cliente</label>
+                    <input type="text" class="form-control" id="cliente">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="cuenta" class="form-label">Número de Cuenta</label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="cuenta" 
+                           placeholder="Ej: 123-4567890-1-23" 
+                           inputmode="numeric">
+                </div>
+                
             </div>
             
             <div class="col-md-4">
@@ -98,6 +108,49 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+        // Espera a que el documento esté listo
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            // Selecciona el campo de "Número de Cuenta"
+            const inputCuenta = document.getElementById('cuenta');
+
+            // Escucha el evento 'input' (cada vez que se teclea algo)
+            inputCuenta.addEventListener('input', function (e) {
+                
+                // 1. Limpiar el valor: Quita todo lo que NO sea un dígito
+                let valor = e.target.value.replace(/\D/g, '');
+                let longitud = valor.length;
+                let valorFormateado = '';
+
+                // 2. Limitar la longitud total a 14 dígitos
+                if (longitud > 14) {
+                    valor = valor.substring(0, 14);
+                    longitud = 14;
+                }
+
+                // 3. Decidir qué formato aplicar
+                if (longitud > 13) {
+                    // Formato de 14 dígitos: XXX-XXXXXXXX-X-XX (Grupos: 3-8-1-2)
+                    valorFormateado = valor.substring(0, 3);
+                    if (longitud > 3) { valorFormateado += '-' + valor.substring(3, 11); }
+                    if (longitud > 11) { valorFormateado += '-' + valor.substring(11, 12); }
+                    if (longitud > 12) { valorFormateado += '-' + valor.substring(12, 14); }
+                
+                } else {
+                    // Formato de 13 dígitos: XXX-XXXXXXX-X-XX (Grupos: 3-7-1-2)
+                    valorFormateado = valor.substring(0, 3);
+                    if (longitud > 3) { valorFormateado += '-' + valor.substring(3, 10); }
+                    if (longitud > 10) { valorFormateado += '-' + valor.substring(10, 11); }
+                    if (longitud > 11) { valorFormateado += '-' + valor.substring(11, 13); }
+                }
+
+                // 4. Aplicar el valor formateado de nuevo al campo
+                e.target.value = valorFormateado;
+            });
+        });
+    </script>
 
 </body>
 </html>
