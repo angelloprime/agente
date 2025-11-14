@@ -61,7 +61,7 @@
             display: table-cell;
         }
 
-        /* --- ¡NUEVO! Centrar todo en la tabla --- */
+        /* Centrar todo en la tabla */
         #preview-table th,
         #preview-table td {
             text-align: center;
@@ -73,12 +73,12 @@
 <body>
 
     <header class="site-header">
-        <div class="container">
+        <div class="container-fluid">
             <h1 class="text-center">Sistema de Constancias</h1>
         </div>
     </header>
 
-    <main class="container mt-4 mb-4">
+    <main class="container-fluid mt-4 mb-4">
         <div class="row">
             
             <div class="col-md-3">
@@ -154,7 +154,7 @@
     </main>
 
     <footer class="site-footer mt-auto">
-        <div class="container text-center">
+        <div class="container-fluid text-center">
             <p class="mb-0">
                 &copy; Hecho por: ASQ - Versión 2.0
             </p>
@@ -172,11 +172,14 @@
             const operacionesContainer = document.getElementById('operaciones-container');
             const checkHora = document.getElementById('btn-check-hora');
             const checkCuenta = document.getElementById('btn-check-cuenta');
-            const previewTable = document.getElementById('preview-table'); // Tabla
-            const previewHeader = document.getElementById('preview-header'); // Cabecera
-            const previewBody = document.getElementById('preview-body'); // Cuerpo
+            const previewTable = document.getElementById('preview-table');
+            const previewHeader = document.getElementById('preview-header');
+            const previewBody = document.getElementById('preview-body');
             const btnLimpiar = document.getElementById('btn-limpiar');
             const inputTerminal = document.getElementById('terminal');
+            const inputAsesor = document.getElementById('asesor');
+            const inputCliente = document.getElementById('cliente');
+            const btnGenerarCorreo = document.getElementById('btn-generar-correo'); // ¡NUEVO!
 
             // --- Script para NÚMERO DE CUENTA ---
             inputCuenta.addEventListener('input', function (e) {
@@ -197,7 +200,6 @@
                 const cantidad = parseInt(selectCantidad.value, 10);
                 let htmlInterno = ''; 
                 for (let i = 1; i <= cantidad; i++) {
-                    // Añadido "checked" a "Extra" y "display: block" al campo de texto
                     htmlInterno += `
                         <div class="card card-body mb-2">
                             <h5 class="h6">Operación ${i}</h5>
@@ -273,7 +275,6 @@
 
             // --- (DOM) Actualizar VISTA PREVIA (Cabecera) ---
             function actualizarVistaPrevia() {
-                // Siempre genera la cabecera completa, pero con clases
                 const headers = ['Fecha', 'Glosa', 'Causal', 'N° Cuenta', 'Importe', 'N° Operación', 'Hora', 'Acción'];
                 let headerHtml = '<tr>';
                 headers.forEach(h => {
@@ -286,7 +287,6 @@
                 previewHeader.innerHTML = headerHtml;
                 previewBody.innerHTML = generarPlaceholder(); 
                 
-                // Aplica las clases de visibilidad a la tabla
                 previewTable.classList.toggle('show-hora', checkHora.checked);
                 previewTable.classList.toggle('show-cuenta', checkCuenta.checked);
             }
@@ -298,7 +298,7 @@
                  }
             }
 
-            // --- Escuchadores de Checkbox (ya no borran la tabla) ---
+            // --- Escuchadores de Checkbox (no borran la tabla) ---
             checkHora.addEventListener('change', function() {
                 previewTable.classList.toggle('show-hora', this.checked);
                 actualizarColspanPlaceholder(); 
@@ -334,8 +334,8 @@
                     'Causal': causal,
                     'Importe': importe,
                     'N° Operación': operacion,
-                    'N° Cuenta': inputCuenta.value, // Toma el valor actual
-                    'Hora': '' // --- ¡CAMBIO! Ya no pone la hora actual ---
+                    'N° Cuenta': inputCuenta.value, 
+                    'Hora': '' // Vacío por defecto
                 };
                 
                 let newRowHtml = `
@@ -357,9 +357,9 @@
 
                 const placeholder = previewBody.querySelector('.placeholder-row');
                 if (placeholder) {
-                    previewBody.innerHTML = newRowHtml; // Reemplazar placeholder
+                    previewBody.innerHTML = newRowHtml;
                 } else {
-                    previewBody.innerHTML += newRowHtml; // Añadir al final
+                    previewBody.innerHTML += newRowHtml;
                 }
                 e.target.value = '';
             });
@@ -389,8 +389,8 @@
 
             // --- SCRIPT PARA BOTÓN LIMPIAR ---
             btnLimpiar.addEventListener('click', function() {
-                document.getElementById('asesor').value = '';
-                document.getElementById('cliente').value = '';
+                inputAsesor.value = '';
+                inputCliente.value = '';
                 inputCuenta.value = '';
                 checkHora.checked = false;
                 checkCuenta.checked = false;
@@ -399,6 +399,57 @@
                 actualizarSecciones();
                 actualizarVistaPrevia(); 
             });
+
+            // ==============================================
+            // === ¡NUEVO! SCRIPT PARA BOTÓN GENERAR CORREO ===
+            // ==============================================
+            btnGenerarCorreo.addEventListener('click', function() {
+                let subject = "Prueba: Constancia de Operaciones";
+                let body = "";
+
+                body += "Estimado/a: " + inputCliente.value + "\n\n";
+                body += "Asesor: " + inputAsesor.value + "\n";
+                body += "Terminal: " + inputTerminal.value + "\n\n";
+                body += "--- Resumen de Operaciones ---\n";
+
+                const rows = previewBody.querySelectorAll('tr');
+                
+                // Generar cabecera para el correo (solo visibles)
+                let headersText = [];
+                previewHeader.querySelectorAll('th').forEach(th => {
+                    if (window.getComputedStyle(th).display !== 'none' && th.innerText !== 'Acción') {
+                        headersText.push(th.innerText);
+                    }
+                });
+                body += headersText.join(' | ') + "\n";
+                body += "---------------------------------\n";
+
+                // Generar filas
+                rows.forEach(row => {
+                    if (row.classList.contains('placeholder-row')) return; // Saltar placeholder
+
+                    let rowText = [];
+                    row.querySelectorAll('td').forEach(td => {
+                        // Añadir solo si la celda es visible y no es la de botones
+                        if (window.getComputedStyle(td).display !== 'none' && !td.classList.contains('action-buttons')) {
+                            rowText.push(td.innerText);
+                        }
+                    });
+                    body += rowText.join(' | ') + "\n";
+                });
+                
+                body += "\nSaludos.\n";
+
+                // Crear el enlace mailto
+                // Dejamos el "Para" vacío (mailto:?) para que sea una prueba
+                let mailtoLink = "mailto:?"; 
+                mailtoLink += "subject=" + encodeURIComponent(subject);
+                mailtoLink += "&body=" + encodeURIComponent(body);
+
+                // Abrir el cliente de correo
+                window.location.href = mailtoLink;
+            });
+
 
             // --- Llamadas iniciales al cargar la página ---
             actualizarSecciones();
