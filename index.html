@@ -91,6 +91,12 @@
                     <label for="cliente" class="form-label">Cliente</label>
                     <input type="text" class="form-control" id="cliente">
                 </div>
+                
+                <div class="mb-3">
+                    <label for="correo-destinatario" class="form-label">Correo (Destinatario)</label>
+                    <input type="email" class="form-control" id="correo-destinatario" placeholder="ejemplo@correo.com">
+                </div>
+
                 <div class="mb-3">
                     <label for="cuenta" class="form-label">Número de Cuenta</label>
                     <input type="text" class="form-control" id="cuenta" placeholder="Ej: 123-4567890-1-23" inputmode="numeric">
@@ -180,6 +186,7 @@
             const inputAsesor = document.getElementById('asesor');
             const inputCliente = document.getElementById('cliente');
             const btnGenerarCorreo = document.getElementById('btn-generar-correo');
+            const inputCorreoDestinatario = document.getElementById('correo-destinatario'); // ¡NUEVO!
 
             // --- Script para NÚMERO DE CUENTA ---
             inputCuenta.addEventListener('input', function (e) {
@@ -335,12 +342,9 @@
                     'Importe': importe,
                     'N° Operación': operacion,
                     'N° Cuenta': inputCuenta.value, 
-                    'Hora': '' // Vacío
+                    'Hora': ''
                 };
                 
-                // ==============================================
-                // === ¡CAMBIO! Añadido contenteditable="true" ===
-                // ==============================================
                 let newRowHtml = `
                     <tr>
                         <td>${dataMap['Fecha']}</td>
@@ -394,6 +398,7 @@
             btnLimpiar.addEventListener('click', function() {
                 inputAsesor.value = '';
                 inputCliente.value = '';
+                inputCorreoDestinatario.value = ''; // ¡NUEVO!
                 inputCuenta.value = '';
                 checkHora.checked = false;
                 checkCuenta.checked = false;
@@ -403,49 +408,56 @@
                 actualizarVistaPrevia(); 
             });
 
-            // --- SCRIPT PARA BOTÓN GENERAR CORREO ---
+            // ==============================================
+            // === SCRIPT PARA BOTÓN GENERAR CORREO (ACTUALIZADO) ===
+            // ==============================================
             btnGenerarCorreo.addEventListener('click', function() {
-                let subject = "Prueba: Constancia de Operaciones";
+                // ¡CAMBIO! Asunto dinámico y destinatario
+                const destinatario = inputCorreoDestinatario.value;
+                const subject = "CONSTANCIA // " + inputTerminal.value;
                 let body = "";
 
                 body += "Estimado/a: " + inputCliente.value + "\n\n";
                 body += "Asesor: " + inputAsesor.value + "\n";
                 body += "Terminal: " + inputTerminal.value + "\n\n";
-                body += "--- Resumen de Operaciones ---\n";
 
                 const rows = previewBody.querySelectorAll('tr');
                 
+                // Recopilar cabeceras visibles
                 let headersText = [];
-                previewHeader.querySelectorAll('th').forEach(th => {
+                let headerIndices = []; // Para saber qué celdas tomar
+                previewHeader.querySelectorAll('th').forEach((th, index) => {
                     if (window.getComputedStyle(th).display !== 'none' && th.innerText !== 'Acción') {
                         headersText.push(th.innerText);
+                        headerIndices.push(index);
                     }
                 });
-                body += headersText.join(' | ') + "\n";
-                body += "---------------------------------\n";
 
-                rows.forEach(row => {
+                // ¡CAMBIO! Nuevo formato de cuerpo
+                rows.forEach((row, index) => {
                     if (row.classList.contains('placeholder-row')) return;
-
-                    let rowText = [];
-                    row.querySelectorAll('td').forEach(td => {
-                        if (window.getComputedStyle(td).display !== 'none' && !td.classList.contains('action-buttons')) {
-                            // ¡Importante! Usar innerText para leer el contenido editable
-                            rowText.push(td.innerText); 
-                        }
+                    
+                    body += `--- Operación ${index + 1} ---\n`;
+                    const cells = row.querySelectorAll('td');
+                    
+                    headerIndices.forEach(i => {
+                        const header = headersText[headerIndices.indexOf(i)];
+                        const cell = cells[i];
+                        body += `${header}: ${cell.innerText}\n`;
                     });
-                    body += rowText.join(' | ') + "\n";
+                    
+                    body += "\n"; // Espacio entre operaciones
                 });
                 
                 body += "\nSaludos.\n";
 
-                let mailtoLink = "mailto:?"; 
+                // ¡CAMBIO! mailtoLink ahora usa el destinatario
+                let mailtoLink = "mailto:" + encodeURIComponent(destinatario) + "?"; 
                 mailtoLink += "subject=" + encodeURIComponent(subject);
                 mailtoLink += "&body=" + encodeURIComponent(body);
 
                 window.location.href = mailtoLink;
             });
-
 
             // --- Llamadas iniciales al cargar la página ---
             actualizarSecciones();
