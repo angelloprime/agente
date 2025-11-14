@@ -42,6 +42,15 @@
             border-color: #d95f00;
             color: white;
         }
+
+        /* --- ¡NUEVO! Estilo para los botones de acción --- */
+        .action-buttons .btn {
+            padding: 0.1rem 0.4rem; /* Botones más pequeños */
+            line-height: 1.2;
+        }
+        .action-buttons {
+            min-width: 85px; /* Evita que los botones se reordenen feo */
+        }
     </style>
 </head>
 
@@ -227,7 +236,20 @@
                 if (incluirCuenta) { headers.push('N° Cuenta'); }
                 headers.push('Importe', 'N° Operación');
                 if (incluirHora) { headers.push('Hora'); }
+                headers.push('Acción'); // ¡NUEVO!
                 return headers;
+            }
+            
+            // --- (Helper) Generar el placeholder de la tabla ---
+            function generarPlaceholder() {
+                const colspan = obtenerCabecerasPreview().length;
+                return `
+                    <tr class="placeholder-row">
+                        <td colspan="${colspan}" class="text-center text-muted fst-italic">
+                            Aún no hay datos...
+                        </td>
+                    </tr>
+                `;
             }
 
             // --- (DOM) Actualizar VISTA PREVIA ---
@@ -237,16 +259,16 @@
                 headers.forEach(h => { headerHtml += `<th>${h}</th>`; });
                 headerHtml += '</tr>';
                 previewHeader.innerHTML = headerHtml;
-                
-                // Poner placeholder
-                previewBody.innerHTML = `
-                    <tr class="placeholder-row">
-                        <td colspan="${headers.length}" class="text-center text-muted fst-italic">
-                            Aún no hay datos...
-                        </td>
-                    </tr>
-                `;
+                previewBody.innerHTML = generarPlaceholder(); // Reinicia la tabla con el placeholder
             }
+            
+            // --- (Helper) Revisar si la tabla está vacía y poner placeholder ---
+            function revisarPlaceholderTabla() {
+                 if (previewBody.querySelectorAll('tr').length === 0) {
+                    previewBody.innerHTML = generarPlaceholder();
+                 }
+            }
+
 
             // --- (Escuchadores) Actualizar cabecera de tabla y cantidad de ops ---
             checkHora.addEventListener('change', actualizarVistaPrevia);
@@ -254,40 +276,23 @@
             selectCantidad.addEventListener('change', actualizarSecciones);
             
 
-            // ==============================================
-            // === ¡NUEVO! SCRIPT PARA PARSEAR EL TEXTO   ===
-            // ==============================================
+            // --- SCRIPT PARA PARSEAR EL TEXTO ---
             operacionesContainer.addEventListener('input', function(e) {
-                // Solo reaccionar si se escribe en el campo "Comentario"
-                if (!e.target.classList.contains('campo-comentario')) {
-                    return;
-                }
-
+                if (!e.target.classList.contains('campo-comentario')) { return; }
                 const valor = e.target.value;
-                
-                // Expresión regular para capturar los datos
-                // Formato: FECHA  GLOSA  IMPORTE(-)  ... TERMINAL OPERACION
                 const regex = /^(\d{1,2}-\d{1,2})\s+(.*?)\s+([\d,]+\.\d{2})(-)?\s+.*?\s+(\d+)\s+(\d+)$/;
                 const match = valor.match(regex);
+                if (!match) { return; }
 
-                // Si no hay match, no hacer nada
-                if (!match) {
-                    return;
-                }
-
-                // 1. Procesar los datos extraídos
                 const currentYear = new Date().getFullYear();
                 const fecha = match[1].replace('-', '/') + '/' + currentYear;
                 const glosa = match[2].trim();
                 const importe = 'S/. ' + match[3];
                 const causal = match[4] === '-' ? 'CARGO' : 'ABONO';
                 const terminal = 'H' + match[5];
-                const operacion = match[6].slice(-6); // Últimos 6 dígitos
-
-                // 2. Poblar el campo Terminal
+                const operacion = match[6].slice(-6); 
                 inputTerminal.value = terminal;
 
-                // 3. Preparar datos para la tabla
                 const headers = obtenerCabecerasPreview();
                 const dataMap = {
                     'Fecha': fecha,
@@ -299,48 +304,76 @@
                     'Hora': checkHora.checked ? new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : ''
                 };
                 
-                // 4. Construir la fila
                 let newRowHtml = '<tr>';
                 headers.forEach(header => {
-                    // Si el header existe en nuestro map, usarlo. Si no (ej. Hora no marcada), pone vacío.
-                    newRowHtml += `<td>${dataMap[header] || ''}</td>`;
+                    if (header === 'Acción') {
+                        // ¡NUEVO! Añadir botones de acción
+                        newRowHtml += `
+                            <td class="text-center text-nowrap action-buttons">
+                                <button type="button" class="btn btn-light btn-sm btn-move-up" title="Subir">&uarr;</button>
+                                <button type="button" class="btn btn-light btn-sm btn-move-down" title="Bajar">&darr;</button>
+                                <button type="button" class="btn btn-danger btn-sm btn-delete-row" title="Eliminar">&times;</button>
+                            </td>`;
+                    } else {
+                        newRowHtml += `<td>${dataMap[header] || ''}</td>`;
+                    }
                 });
                 newRowHtml += '</tr>';
 
-                // 5. Añadir la fila a la tabla
                 const placeholder = previewBody.querySelector('.placeholder-row');
                 if (placeholder) {
-                    // Si es la primera fila, reemplazar el placeholder
-                    previewBody.innerHTML = newRowHtml;
+                    previewBody.innerHTML = newRowHtml; // Reemplazar placeholder
                 } else {
-                    // Si ya hay filas, añadirla al final
-                    previewBody.innerHTML += newRowHtml;
+                    previewBody.innerHTML += newRowHtml; // Añadir al final
                 }
-                
-                // 6. Limpiar el campo de texto
                 e.target.value = '';
             });
 
             // ==============================================
-            // === ¡NUEVO! SCRIPT PARA BOTÓN LIMPIAR      ===
+            // === ¡NUEVO! SCRIPT PARA ACCIONES DE TABLA (MOVER/ELIMINAR) ===
+            // ==============================================
+            previewBody.addEventListener('click', function(e) {
+                const fila = e.target.closest('tr');
+                if (!fila) return; // Salir si no se hizo clic en una fila
+
+                // --- Lógica de Eliminar ---
+                if (e.target.classList.contains('btn-delete-row')) {
+                    fila.remove();
+                    revisarPlaceholderTabla(); // Revisar si la tabla quedó vacía
+                }
+                
+                // --- Lógica de Mover Arriba ---
+                else if (e.target.classList.contains('btn-move-up')) {
+                    const filaAnterior = fila.previousElementSibling;
+                    // Mover solo si existe una fila anterior Y no es el placeholder
+                    if (filaAnterior && !filaAnterior.classList.contains('placeholder-row')) {
+                        previewBody.insertBefore(fila, filaAnterior);
+                    }
+                }
+                
+                // --- Lógica de Mover Abajo ---
+                else if (e.target.classList.contains('btn-move-down')) {
+                    const filaSiguiente = fila.nextElementSibling;
+                    if (filaSiguiente) {
+                        // Mover la fila siguiente ANTES de la fila actual
+                        previewBody.insertBefore(filaSiguiente, fila);
+                    }
+                }
+            });
+
+            // ==============================================
+            // === SCRIPT PARA BOTÓN LIMPIAR (ACTUALIZADO) ===
             // ==============================================
             btnLimpiar.addEventListener('click', function() {
-                // Limpiar Columna 1
                 document.getElementById('asesor').value = '';
                 document.getElementById('cliente').value = '';
                 inputCuenta.value = '';
-                
-                // Limpiar Columna 2
                 checkHora.checked = false;
                 checkCuenta.checked = false;
                 selectCantidad.value = '1';
-                
-                // Limpiar Columna 3
                 inputTerminal.value = '';
-
-                // Refrescar los elementos dinámicos
                 actualizarSecciones();
-                actualizarVistaPrevia(); // Esto reinicia la tabla
+                actualizarVistaPrevia(); // Esto reinicia la tabla y pone el placeholder
             });
 
             // --- Llamadas iniciales al cargar la página ---
