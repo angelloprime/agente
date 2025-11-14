@@ -179,7 +179,7 @@
             const inputTerminal = document.getElementById('terminal');
             const inputAsesor = document.getElementById('asesor');
             const inputCliente = document.getElementById('cliente');
-            const btnGenerarCorreo = document.getElementById('btn-generar-correo'); // ¡NUEVO!
+            const btnGenerarCorreo = document.getElementById('btn-generar-correo');
 
             // --- Script para NÚMERO DE CUENTA ---
             inputCuenta.addEventListener('input', function (e) {
@@ -250,7 +250,7 @@
             
             // --- (Helper) Generar el placeholder de la tabla ---
             function generarPlaceholder() {
-                let colspan = 6; // Base: Fecha, Glosa, Causal, Importe, N° Op, Acción
+                let colspan = 6; 
                 if (checkHora.checked) colspan++;
                 if (checkCuenta.checked) colspan++;
                 return `
@@ -335,18 +335,21 @@
                     'Importe': importe,
                     'N° Operación': operacion,
                     'N° Cuenta': inputCuenta.value, 
-                    'Hora': '' // Vacío por defecto
+                    'Hora': '' // Vacío
                 };
                 
+                // ==============================================
+                // === ¡CAMBIO! Añadido contenteditable="true" ===
+                // ==============================================
                 let newRowHtml = `
                     <tr>
                         <td>${dataMap['Fecha']}</td>
                         <td>${dataMap['Glosa']}</td>
                         <td>${dataMap['Causal']}</td>
-                        <td class="col-cuenta">${dataMap['N° Cuenta']}</td>
+                        <td class="col-cuenta" contenteditable="true">${dataMap['N° Cuenta']}</td>
                         <td>${dataMap['Importe']}</td>
                         <td>${dataMap['N° Operación']}</td>
-                        <td class="col-hora">${dataMap['Hora']}</td>
+                        <td class="col-hora" contenteditable="true">${dataMap['Hora']}</td>
                         <td class="text-center text-nowrap action-buttons">
                             <button type="button" class="btn btn-light btn-sm btn-move-up" title="Subir">&uarr;</button>
                             <button type="button" class="btn btn-light btn-sm btn-move-down" title="Bajar">&darr;</button>
@@ -400,9 +403,7 @@
                 actualizarVistaPrevia(); 
             });
 
-            // ==============================================
-            // === ¡NUEVO! SCRIPT PARA BOTÓN GENERAR CORREO ===
-            // ==============================================
+            // --- SCRIPT PARA BOTÓN GENERAR CORREO ---
             btnGenerarCorreo.addEventListener('click', function() {
                 let subject = "Prueba: Constancia de Operaciones";
                 let body = "";
@@ -414,7 +415,6 @@
 
                 const rows = previewBody.querySelectorAll('tr');
                 
-                // Generar cabecera para el correo (solo visibles)
                 let headersText = [];
                 previewHeader.querySelectorAll('th').forEach(th => {
                     if (window.getComputedStyle(th).display !== 'none' && th.innerText !== 'Acción') {
@@ -424,15 +424,14 @@
                 body += headersText.join(' | ') + "\n";
                 body += "---------------------------------\n";
 
-                // Generar filas
                 rows.forEach(row => {
-                    if (row.classList.contains('placeholder-row')) return; // Saltar placeholder
+                    if (row.classList.contains('placeholder-row')) return;
 
                     let rowText = [];
                     row.querySelectorAll('td').forEach(td => {
-                        // Añadir solo si la celda es visible y no es la de botones
                         if (window.getComputedStyle(td).display !== 'none' && !td.classList.contains('action-buttons')) {
-                            rowText.push(td.innerText);
+                            // ¡Importante! Usar innerText para leer el contenido editable
+                            rowText.push(td.innerText); 
                         }
                     });
                     body += rowText.join(' | ') + "\n";
@@ -440,13 +439,10 @@
                 
                 body += "\nSaludos.\n";
 
-                // Crear el enlace mailto
-                // Dejamos el "Para" vacío (mailto:?) para que sea una prueba
                 let mailtoLink = "mailto:?"; 
                 mailtoLink += "subject=" + encodeURIComponent(subject);
                 mailtoLink += "&body=" + encodeURIComponent(body);
 
-                // Abrir el cliente de correo
                 window.location.href = mailtoLink;
             });
 
